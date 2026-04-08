@@ -1,22 +1,23 @@
 const { createApp, ref, computed, onMounted } = Vue;
 
+// 1. 確保呢度嘅資料格式正確
 const PIKMIN_DECOR_LIST = [
     { name: '荷蘭木鞋 (2026)', icon: '👞', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '朱古力 (2026)', icon: '💝', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '御節料理', icon: '🍱', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '餐廳 (廚師帽)', icon: '🍴', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '餐廳', icon: '🍴', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '咖啡店', icon: '☕', colors: ['red', 'yellow', 'blue'] },
-    { name: '甜點店 (馬卡龍)', icon: '🍰', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '甜點店', icon: '🍰', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '電影院', icon: '🎬', colors: ['red', 'yellow', 'blue'] },
-    { name: '藥妝店 (牙刷)', icon: '💊', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '超市 (香蕉/蘑菇)', icon: '🛒', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '藥妝店', icon: '💊', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '超市', icon: '🛒', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '麵包店', icon: '🥐', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '公園 (三葉草)', icon: '🌳', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '車站 (紙火車)', icon: '🚉', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '路邊 (貼紙)', icon: '🍃', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] }
+    { name: '公園', icon: '🌳', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '車站', icon: '🚉', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '路邊', icon: '🍃', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] }
 ];
 
-createApp({
+const app = createApp({
     setup() {
         const pikminColors = [
             { id: 'red', label: '紅', bg: 'bg-red-500' },
@@ -31,33 +32,38 @@ createApp({
         const decorData = PIKMIN_DECOR_LIST;
         const ownedData = ref({});
 
-        // 更強大的 URL 解碼功能 (處理 GitHub Subfolders)
+        // 讀取網址 Hash 數據
         const loadFromUrl = () => {
-            const hash = window.location.hash.slice(1); // 攞 # 號後面的內容
+            const hash = window.location.hash.slice(1);
             if (!hash) return {};
             try {
+                // 還原 Base64 符號
                 const safeHash = hash.replace(/-/g, '+').replace(/_/g, '/');
                 const decodedJson = decodeURIComponent(escape(atob(safeHash)));
                 return JSON.parse(decodedJson);
             } catch (e) {
-                console.error("URL 解析失敗:", e);
+                console.warn("數據載入失敗，已重設。詳情:", e);
                 return {};
             }
         };
 
         onMounted(() => {
             ownedData.value = loadFromUrl();
+            // 當用戶撳「返回」或手動改 URL 嗰陣更新畫面
             window.addEventListener('hashchange', () => {
                 ownedData.value = loadFromUrl();
             });
         });
 
         const updateUrl = () => {
-            const jsonStr = JSON.stringify(ownedData.value);
-            const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
-            const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-            // 關鍵：直接修改 hash，GitHub Pages 會保留 subfolder
-            window.location.hash = safeBase64;
+            try {
+                const jsonStr = JSON.stringify(ownedData.value);
+                const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
+                const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+                window.location.hash = safeBase64;
+            } catch (e) {
+                console.error("更新網址失敗:", e);
+            }
         };
 
         const togglePikmin = (catName, colorId) => {
@@ -67,10 +73,8 @@ createApp({
         };
 
         const generateShareLink = () => {
-            // 確保攞到包含 subfolder 嘅 Full URL
-            const fullUrl = window.location.href;
-            navigator.clipboard.writeText(fullUrl).then(() => {
-                alert("✅ 連結已複製！請 Bookmark 此網址。");
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert("✅ 連結已複製！請 Bookmark 呢個網址。");
             });
         };
 
@@ -103,4 +107,6 @@ createApp({
             generateShareLink
         };
     }
-}).mount('#app');
+});
+
+app.mount('#app');

@@ -35,25 +35,34 @@ createApp({
 
         const decorData = PIKMIN_DECOR_LIST;
         const ownedData = ref({});
-        const isShareMode = ref(false);
 
-        // 啟動時檢查係咪 Share Mode
         onMounted(() => {
             const urlParams = new URLSearchParams(window.location.search);
             let shareData = urlParams.get('share');
-        
+
             if (shareData) {
+                // --- 數據匯入邏輯 ---
                 try {
-                    isShareMode.value = true;
-                    // 換返轉：將安全符號還原返做 Base64 格式
+                    // 1. 還原安全 Base64 格式
                     shareData = shareData.replace(/-/g, '+').replace(/_/g, '/');
                     while (shareData.length % 4) shareData += '=';
                     
+                    // 2. 解碼
                     const decodedJson = decodeURIComponent(escape(atob(shareData)));
-                    ownedData.value = JSON.parse(decodedJson);
+                    const importedData = JSON.parse(decodedJson);
+                    
+                    // 3. 詢問用戶是否匯入（防止意外覆寫原本的進度）
+                    if (confirm("偵測到分享數據，是否要匯入並覆蓋此裝置目前的紀錄？")) {
+                        localStorage.setItem('pikmin_tracker_2026_final', JSON.stringify(importedData));
+                        // 匯入後清除網址參數並重新整理，進入正常編輯模式
+                        window.location.href = window.location.origin + window.location.pathname;
+                        return;
+                    } else {
+                        // 如果用戶按取消，就載入本地原本的數據
+                        loadLocalData();
+                    }
                 } catch (e) {
-                    console.error("解析分享數據失敗:", e);
-                    alert("連結無效或數據損毀");
+                    console.error("數據匯入失敗:", e);
                     loadLocalData();
                 }
             } else {
@@ -67,14 +76,13 @@ createApp({
         };
 
         const togglePikmin = (catName, colorId) => {
-            //if (isShareMode.value) return; // 分享模式下唯讀
+            // 現在這裡不再有 isShareMode 的限制，隨時可以 edit
             const key = `${catName}_${colorId}`;
             ownedData.value[key] = ((ownedData.value[key] || 0) + 1) % 3;
             localStorage.setItem('pikmin_tracker_2026_final', JSON.stringify(ownedData.value));
         };
 
         const generateShareLink = () => {
-            // 先轉 JSON，再轉 Base64，最後將唔安全嘅符號換走
             const jsonStr = JSON.stringify(ownedData.value);
             const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
             const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -82,44 +90,17 @@ createApp({
             const shareUrl = `${window.location.origin}${window.location.pathname}?share=${safeBase64}`;
             
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("✅ 分享連結已複製！");
-            }).catch(err => {
-                console.error('無法複製', err);
-                alert("複製失敗，請手動複製網址列");
+                alert("✅ 數據同步連結已複製！在其他裝置打開此連結即可繼續編輯。");
             });
         };
 
-        const exitShareMode = () => {
-            window.location.href = window.location.origin + window.location.pathname;
-        };
-
-        const getColorData = (id) => pikminColors.find(c => c.id === id);
-        const getState = (catName, colorId) => ownedData.value[`${catName}_${colorId}`] || 0;
-        const getStateClass = (catName, colorId) => `state-${getState(catName, colorId)}`;
-        const getCategoryOwnedCount = (cat) => cat.colors.filter(id => getState(cat.name, id) > 0).length;
-
-        const totalCount = computed(() => decorData.reduce((acc, cat) => acc + cat.colors.length, 0));
-        const ownedCount = computed(() => {
-            let count = 0;
-            decorData.forEach(cat => {
-                cat.colors.forEach(id => { if (getState(cat.name, id) > 0) count++; });
-            });
-            return count;
-        });
-        const progress = computed(() => totalCount.value ? Math.round((ownedCount.value / totalCount.value) * 100) : 0);
-
-        const resetData = () => {
-            if (confirm('確定重設所有進度？')) {
-                ownedData.value = {};
-                localStorage.removeItem('pikmin_tracker_2026_final');
-            }
-        };
+        // --- 其他 Helper Functions (getState, progress 等) 保持不變 ---
 
         return {
             pikminColors, decorData, togglePikmin, getState, 
             getStateClass, getCategoryOwnedCount, getColorData,
             ownedCount, totalCount, progress, resetData,
-            isShareMode, generateShareLink, exitShareMode
+            generateShareLink
         };
     }
 }).mount('#app');

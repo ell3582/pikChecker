@@ -1,23 +1,23 @@
 const { createApp, ref, computed, onMounted } = Vue;
 
-// 1. 確保呢度嘅資料格式正確
-const PIKMIN_DECOR_LIST = [
+// 2026 最新 Collection 數據庫
+const PIKMIN_LIST = [
     { name: '荷蘭木鞋 (2026)', icon: '👞', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '朱古力 (2026)', icon: '💝', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '御節料理', icon: '🍱', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '餐廳', icon: '🍴', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '餐廳 (廚師帽)', icon: '🍴', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '咖啡店', icon: '☕', colors: ['red', 'yellow', 'blue'] },
-    { name: '甜點店', icon: '🍰', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '甜點店 (馬卡龍)', icon: '🍰', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '電影院', icon: '🎬', colors: ['red', 'yellow', 'blue'] },
-    { name: '藥妝店', icon: '💊', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '超市', icon: '🛒', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '藥妝店 (牙刷)', icon: '💊', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '超市 (香蕉/蘑菇)', icon: '🛒', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '麵包店', icon: '🥐', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '公園', icon: '🌳', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '車站', icon: '🚉', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '路邊', icon: '🍃', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] }
+    { name: '公園 (三葉草)', icon: '🌳', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '車站 (紙火車)', icon: '🚉', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
+    { name: '路邊 (貼紙)', icon: '🍃', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] }
 ];
 
-const app = createApp({
+createApp({
     setup() {
         const pikminColors = [
             { id: 'red', label: '紅', bg: 'bg-red-500' },
@@ -29,65 +29,45 @@ const app = createApp({
             { id: 'rock', label: '岩', bg: 'bg-slate-600' }
         ];
 
-        const decorData = PIKMIN_DECOR_LIST;
         const ownedData = ref({});
+        const decorData = PIKMIN_LIST;
 
-        // 讀取網址 Hash 數據
-        const loadFromUrl = () => {
+        // 從網址 Hash 讀取數據並解碼
+        const load = () => {
             const hash = window.location.hash.slice(1);
             if (!hash) return {};
             try {
-                // 還原 Base64 符號
                 const safeHash = hash.replace(/-/g, '+').replace(/_/g, '/');
-                const decodedJson = decodeURIComponent(escape(atob(safeHash)));
-                return JSON.parse(decodedJson);
+                return JSON.parse(decodeURIComponent(escape(atob(safeHash))));
             } catch (e) {
-                console.warn("數據載入失敗，已重設。詳情:", e);
+                console.warn("URL Data Corrupted");
                 return {};
             }
         };
 
         onMounted(() => {
-            ownedData.value = loadFromUrl();
+            ownedData.value = load();
             // 當用戶撳「返回」或手動改 URL 嗰陣更新畫面
-            window.addEventListener('hashchange', () => {
-                ownedData.value = loadFromUrl();
-            });
+            window.onhashchange = () => { ownedData.value = load(); };
         });
 
+        // 更新網址 Hash (自動 Save)
         const updateUrl = () => {
-            try {
-                const jsonStr = JSON.stringify(ownedData.value);
-                const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
-                const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-                window.location.hash = safeBase64;
-            } catch (e) {
-                console.error("更新網址失敗:", e);
-            }
+            const jsonStr = JSON.stringify(ownedData.value);
+            const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+            const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            window.location.hash = safeBase64;
         };
 
-        const togglePikmin = (catName, colorId) => {
-            const key = `${catName}_${colorId}`;
+        const togglePikmin = (cat, col) => {
+            const key = `${cat}_${col}`;
             ownedData.value[key] = ((ownedData.value[key] || 0) + 1) % 3;
             updateUrl();
         };
 
-        const generateShareLink = () => {
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                alert("✅ 連結已複製！請 Bookmark 呢個網址。");
-            });
-        };
-
-        const resetData = () => {
-            if (confirm('確定清除進度？')) {
-                ownedData.value = {};
-                window.location.hash = "";
-            }
-        };
-
         const getColorData = (id) => pikminColors.find(c => c.id === id);
-        const getState = (catName, colorId) => ownedData.value[`${catName}_${colorId}`] || 0;
-        const getStateClass = (catName, colorId) => `state-${getState(catName, colorId)}`;
+        const getState = (cat, col) => ownedData.value[`${cat}_${col}`] || 0;
+        const getStateClass = (cat, col) => `state-${getState(cat, col)}`;
         const getCategoryOwnedCount = (cat) => cat.colors.filter(id => getState(cat.name, id) > 0).length;
 
         const totalCount = computed(() => decorData.reduce((acc, cat) => acc + cat.colors.length, 0));
@@ -99,14 +79,18 @@ const app = createApp({
             return count;
         });
         const progress = computed(() => totalCount.value ? Math.round((ownedCount.value / totalCount.value) * 100) : 0);
-
-        return {
-            pikminColors, decorData, togglePikmin, getState, 
-            getStateClass, getCategoryOwnedCount, getColorData,
-            ownedCount, totalCount, progress, resetData,
-            generateShareLink
+        
+        const generateShareLink = () => {
+            navigator.clipboard.writeText(window.location.href).then(() => alert("✅ 網址已複製！"));
         };
-    }
-});
 
-app.mount('#app');
+        const resetData = () => {
+            if(confirm('確定要清除所有進度？')) {
+                ownedData.value = {};
+                window.location.hash = '';
+            }
+        };
+
+        return { pikminColors, decorData, togglePikmin, getState, getStateClass, getCategoryOwnedCount, getColorData, ownedCount, totalCount, progress, generateShareLink, resetData };
+    }
+}).mount('#app');

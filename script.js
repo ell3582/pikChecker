@@ -11,12 +11,8 @@ const PIKMIN_DECOR_LIST = [
     { name: '藥妝店 (牙刷)', icon: '💊', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '超市 (香蕉/蘑菇)', icon: '🛒', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '麵包店', icon: '🥐', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '理髮店', icon: '💈', colors: ['red', 'yellow', 'blue'] },
     { name: '公園 (三葉草)', icon: '🌳', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '圖書館', icon: '📚', colors: ['red', 'yellow', 'blue'] },
     { name: '車站 (紙火車)', icon: '🚉', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '服飾店 (髮夾)', icon: '👗', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
-    { name: '雨天 (葉子帽)', icon: '☔', colors: ['blue'] },
     { name: '路邊 (貼紙)', icon: '🍃', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] }
 ];
 

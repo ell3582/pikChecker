@@ -1,0 +1,35 @@
+
+/* 基本樣式 */
+.pikmin-dot { 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+/* 狀態 0: 未擁有 (灰色) */
+.state-0 { 
+    opacity: 0.15; 
+    filter: grayscale(100%); 
+    transform: scale(0.9); 
+}
+
+/* 狀態 1: 第 1 Kick - 黑色圈 */
+.state-1 { 
+    opacity: 1; 
+    filter: grayscale(0%); 
+    transform: scale(1.1); 
+    box-shadow: 0 0 0 3px #1e293b; 
+    border-color: white;
+}
+
+/* 狀態 2: 第 2 Kick - 綠色框 ✅ */
+.state-2 { 
+    opacity: 1; 
+    filter: grayscale(0%); 
+    transform: scale(1.1); 
+    box-shadow: 0 0 0 3px #22c55e; 
+    border-color: white;
+}
+
+[v-cloak] { display: none; }
+
+/* 讓手機版捲動更順滑 */
+.no-scrollbar::-webkit-scrollbar { display: none; }

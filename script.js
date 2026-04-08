@@ -1,6 +1,5 @@
 const { createApp, ref, computed, onMounted } = Vue;
 
-// 將資料抽出嚟，方便你日後喺呢度加新系列
 const PIKMIN_DECOR_LIST = [
     { name: '荷蘭木鞋 (2026)', icon: '👞', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
     { name: '朱古力 (2026)', icon: '💝', colors: ['red', 'yellow', 'blue', 'white', 'purple', 'winged', 'rock'] },
@@ -36,59 +35,70 @@ createApp({
         const decorData = PIKMIN_DECOR_LIST;
         const ownedData = ref({});
 
-        // 核心邏輯：從 URL Hash 讀取數據
+        // 更強大的 URL 解碼功能 (處理 GitHub Subfolders)
         const loadFromUrl = () => {
-            const hash = window.location.hash.replace('#', '');
+            const hash = window.location.hash.slice(1); // 攞 # 號後面的內容
             if (!hash) return {};
             try {
-                const decodedJson = decodeURIComponent(escape(atob(hash.replace(/-/g, '+').replace(/_/g, '/'))));
+                const safeHash = hash.replace(/-/g, '+').replace(/_/g, '/');
+                const decodedJson = decodeURIComponent(escape(atob(safeHash)));
                 return JSON.parse(decodedJson);
             } catch (e) {
-                console.error("URL 數據解析失敗");
+                console.error("URL 解析失敗:", e);
                 return {};
             }
         };
 
-        // 啟動時載入
         onMounted(() => {
             ownedData.value = loadFromUrl();
-            
-            // 監聽網址手動變更（例如撳「返回」掣）
             window.addEventListener('hashchange', () => {
                 ownedData.value = loadFromUrl();
             });
         });
 
-        // 每當數據變動，自動更新網址
         const updateUrl = () => {
             const jsonStr = JSON.stringify(ownedData.value);
             const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
             const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-            // 更新 Hash，唔會 Reload 頁面
+            // 關鍵：直接修改 hash，GitHub Pages 會保留 subfolder
             window.location.hash = safeBase64;
         };
 
         const togglePikmin = (catName, colorId) => {
             const key = `${catName}_${colorId}`;
             ownedData.value[key] = ((ownedData.value[key] || 0) + 1) % 3;
-            updateUrl(); // 每次撳完自動推入網址
+            updateUrl();
         };
 
         const generateShareLink = () => {
-            // 直接攞目前網址就係最新收藏
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                alert("✅ 收藏網址已複製！你可以 Bookmark 呢條 Link 或者 Send 俾朋友。");
+            // 確保攞到包含 subfolder 嘅 Full URL
+            const fullUrl = window.location.href;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                alert("✅ 連結已複製！請 Bookmark 此網址。");
             });
         };
 
         const resetData = () => {
-            if (confirm('確定清除所有進度？')) {
+            if (confirm('確定清除進度？')) {
                 ownedData.value = {};
-                window.location.hash = '';
+                window.location.hash = "";
             }
         };
 
-        // ... 其餘 Helper Functions (getState, progress 等) ...
+        const getColorData = (id) => pikminColors.find(c => c.id === id);
+        const getState = (catName, colorId) => ownedData.value[`${catName}_${colorId}`] || 0;
+        const getStateClass = (catName, colorId) => `state-${getState(catName, colorId)}`;
+        const getCategoryOwnedCount = (cat) => cat.colors.filter(id => getState(cat.name, id) > 0).length;
+
+        const totalCount = computed(() => decorData.reduce((acc, cat) => acc + cat.colors.length, 0));
+        const ownedCount = computed(() => {
+            let count = 0;
+            decorData.forEach(cat => {
+                cat.colors.forEach(id => { if (getState(cat.name, id) > 0) count++; });
+            });
+            return count;
+        });
+        const progress = computed(() => totalCount.value ? Math.round((ownedCount.value / totalCount.value) * 100) : 0);
 
         return {
             pikminColors, decorData, togglePikmin, getState, 

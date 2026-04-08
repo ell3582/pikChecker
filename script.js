@@ -36,65 +36,59 @@ createApp({
         const decorData = PIKMIN_DECOR_LIST;
         const ownedData = ref({});
 
-        onMounted(() => {
-            const urlParams = new URLSearchParams(window.location.search);
-            let shareData = urlParams.get('share');
-
-            if (shareData) {
-                // --- 數據匯入邏輯 ---
-                try {
-                    // 1. 還原安全 Base64 格式
-                    shareData = shareData.replace(/-/g, '+').replace(/_/g, '/');
-                    while (shareData.length % 4) shareData += '=';
-                    
-                    // 2. 解碼
-                    const decodedJson = decodeURIComponent(escape(atob(shareData)));
-                    const importedData = JSON.parse(decodedJson);
-                    
-                    // 3. 詢問用戶是否匯入（防止意外覆寫原本的進度）
-                    if (confirm("偵測到分享數據，是否要匯入並覆蓋此裝置目前的紀錄？")) {
-                        localStorage.setItem('pikmin_tracker_2026_final', JSON.stringify(importedData));
-                        // 匯入後清除網址參數並重新整理，進入正常編輯模式
-                        window.location.href = window.location.origin + window.location.pathname;
-                        return;
-                    } else {
-                        // 如果用戶按取消，就載入本地原本的數據
-                        loadLocalData();
-                    }
-                } catch (e) {
-                    console.error("數據匯入失敗:", e);
-                    loadLocalData();
-                }
-            } else {
-                loadLocalData();
+        // 核心邏輯：從 URL Hash 讀取數據
+        const loadFromUrl = () => {
+            const hash = window.location.hash.replace('#', '');
+            if (!hash) return {};
+            try {
+                const decodedJson = decodeURIComponent(escape(atob(hash.replace(/-/g, '+').replace(/_/g, '/'))));
+                return JSON.parse(decodedJson);
+            } catch (e) {
+                console.error("URL 數據解析失敗");
+                return {};
             }
+        };
+
+        // 啟動時載入
+        onMounted(() => {
+            ownedData.value = loadFromUrl();
+            
+            // 監聽網址手動變更（例如撳「返回」掣）
+            window.addEventListener('hashchange', () => {
+                ownedData.value = loadFromUrl();
+            });
         });
 
-        const loadLocalData = () => {
-            const saved = localStorage.getItem('pikmin_tracker_2026_final');
-            if (saved) ownedData.value = JSON.parse(saved);
-        };
-
-        const togglePikmin = (catName, colorId) => {
-            // 現在這裡不再有 isShareMode 的限制，隨時可以 edit
-            const key = `${catName}_${colorId}`;
-            ownedData.value[key] = ((ownedData.value[key] || 0) + 1) % 3;
-            localStorage.setItem('pikmin_tracker_2026_final', JSON.stringify(ownedData.value));
-        };
-
-        const generateShareLink = () => {
+        // 每當數據變動，自動更新網址
+        const updateUrl = () => {
             const jsonStr = JSON.stringify(ownedData.value);
             const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
             const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-            
-            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${safeBase64}`;
-            
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("✅ 數據同步連結已複製！在其他裝置打開此連結即可繼續編輯。");
+            // 更新 Hash，唔會 Reload 頁面
+            window.location.hash = safeBase64;
+        };
+
+        const togglePikmin = (catName, colorId) => {
+            const key = `${catName}_${colorId}`;
+            ownedData.value[key] = ((ownedData.value[key] || 0) + 1) % 3;
+            updateUrl(); // 每次撳完自動推入網址
+        };
+
+        const generateShareLink = () => {
+            // 直接攞目前網址就係最新收藏
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert("✅ 收藏網址已複製！你可以 Bookmark 呢條 Link 或者 Send 俾朋友。");
             });
         };
 
-        // --- 其他 Helper Functions (getState, progress 等) 保持不變 ---
+        const resetData = () => {
+            if (confirm('確定清除所有進度？')) {
+                ownedData.value = {};
+                window.location.hash = '';
+            }
+        };
+
+        // ... 其餘 Helper Functions (getState, progress 等) ...
 
         return {
             pikminColors, decorData, togglePikmin, getState, 

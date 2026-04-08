@@ -40,15 +40,20 @@ createApp({
         // 啟動時檢查係咪 Share Mode
         onMounted(() => {
             const urlParams = new URLSearchParams(window.location.search);
-            const shareData = urlParams.get('share');
-
+            let shareData = urlParams.get('share');
+        
             if (shareData) {
                 try {
                     isShareMode.value = true;
-                    // 將網址嘅 Base64 轉返做 JSON
-                    ownedData.value = JSON.parse(atob(shareData));
+                    // 換返轉：將安全符號還原返做 Base64 格式
+                    shareData = shareData.replace(/-/g, '+').replace(/_/g, '/');
+                    while (shareData.length % 4) shareData += '=';
+                    
+                    const decodedJson = decodeURIComponent(escape(atob(shareData)));
+                    ownedData.value = JSON.parse(decodedJson);
                 } catch (e) {
-                    console.error("無法解析分享數據");
+                    console.error("解析分享數據失敗:", e);
+                    alert("連結無效或數據損毀");
                     loadLocalData();
                 }
             } else {
@@ -69,12 +74,18 @@ createApp({
         };
 
         const generateShareLink = () => {
-            // 將所有收藏數據壓成一段 Base64 字串
-            const dataString = btoa(JSON.stringify(ownedData.value));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${dataString}`;
+            // 先轉 JSON，再轉 Base64，最後將唔安全嘅符號換走
+            const jsonStr = JSON.stringify(ownedData.value);
+            const base64 = btoa(unescape(encodeURIComponent(jsonStr))); 
+            const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            
+            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${safeBase64}`;
             
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("分享連結已複製！發送給朋友即可查看。");
+                alert("✅ 分享連結已複製！");
+            }).catch(err => {
+                console.error('無法複製', err);
+                alert("複製失敗，請手動複製網址列");
             });
         };
 

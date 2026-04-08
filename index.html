@@ -20,34 +20,20 @@
             <h1 class="text-xl font-black text-green-600 tracking-tighter italic">PIKMIN MARKER</h1>
             
             <div class="flex gap-2">
-                <button v-if="!isShareMode" @click="generateShareLink" 
-                        class="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors shadow-sm" title="分享我的收藏">
+                <button @click="generateShareLink" 
+                        class="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors shadow-sm">
                     <span class="text-sm">🔗</span>
                 </button>
                 
-                <button v-if="!isShareMode" @click="resetData" 
-                        class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm">
+                <button @click="resetData" 
+                        class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-red-100 transition-colors shadow-sm">
                     <span class="text-lg font-bold">↺</span>
-                </button>
-
-                <button v-if="isShareMode" @click="exitShareMode" 
-                        class="px-4 h-9 flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-bold shadow-md hover:bg-orange-600 transition-all">
-                    返回我的收藏
                 </button>
             </div>
         </div>
-
-        <div v-if="isShareMode" class="mt-3 bg-blue-600 text-white text-[11px] py-1.5 px-3 rounded-lg text-center font-bold animate-pulse">
-            👀 正在查看朋友的收藏（唯讀模式）
-        </div>
         
         <div class="mt-4 bg-slate-200 rounded-full h-2.5 w-full overflow-hidden shadow-inner">
-            <div class="bg-gradient-to-r from-green-400 to-green-600 h-full transition-all duration-700 ease-out" 
-                 :style="{ width: progress + '%' }"></div>
-        </div>
-        <div class="flex justify-between text-[10px] mt-2 text-slate-500 font-black uppercase tracking-widest px-1">
-            <span>Progress: {{ ownedCount }} / {{ totalCount }}</span>
-            <span class="text-green-600 font-bold">{{ progress }}%</span>
+            <div class="bg-gradient-to-r from-green-400 to-green-600 h-full transition-all duration-700 ease-out" :style="{ width: progress + '%' }"></div>
         </div>
     </header>
 
